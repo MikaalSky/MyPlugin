@@ -35,19 +35,14 @@ import java.util.Map;
 
 @Plugin(id="MyPlugin", name="MyPlugin", version = "1.0")
 public class MyPlugin {
+    @Inject
     private Logger logger;
+    @Inject
     private Game game;
-    @Inject
-    private void setLogger(Logger logger){
-        this.logger = logger;
-    }
-    @Inject
-    private void setGame(Game game){
-        this.game = game;
-    }
+    
     @Listener
     public void onServerStart(GameStartedServerEvent event){
-        logger.info("test");
+       logger.info("test");
     }
     @Listener
     public void onClientConnectionEvent(ClientConnectionEvent.Join event) {
