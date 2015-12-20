@@ -1,5 +1,6 @@
 package io.lokiraut.MyPlugin;
 
+import com.flowpowered.math.vector.Vector3d;
 import com.google.inject.Inject;
 import org.slf4j.Logger;
 import org.spongepowered.api.Game;
@@ -7,19 +8,41 @@ import org.spongepowered.api.block.BlockState;
 import org.spongepowered.api.block.BlockType;
 import org.spongepowered.api.block.BlockTypes;
 import org.spongepowered.api.block.trait.EnumTraits;
+import org.spongepowered.api.data.DataContainer;
+import org.spongepowered.api.data.DataHolder;
+import org.spongepowered.api.data.key.Key;
+import org.spongepowered.api.data.key.Keys;
 import org.spongepowered.api.data.manipulator.ImmutableDataManipulator;
 import org.spongepowered.api.data.manipulator.immutable.ImmutableDisplayNameData;
+import org.spongepowered.api.data.manipulator.immutable.ImmutableDyeableData;
 import org.spongepowered.api.data.manipulator.immutable.entity.ImmutableAchievementData;
 import org.spongepowered.api.data.manipulator.mutable.DisplayNameData;
+import org.spongepowered.api.data.manipulator.mutable.DyeableData;
+import org.spongepowered.api.data.manipulator.mutable.entity.AgeableData;
+import org.spongepowered.api.data.manipulator.mutable.entity.GameModeData;
+import org.spongepowered.api.data.manipulator.mutable.entity.HealthData;
+import org.spongepowered.api.data.merge.MergeFunction;
+import org.spongepowered.api.data.type.DyeColor;
+import org.spongepowered.api.data.type.DyeColors;
+import org.spongepowered.api.data.value.BaseValue;
+import org.spongepowered.api.data.value.immutable.ImmutableValue;
+import org.spongepowered.api.data.value.mutable.Value;
 import org.spongepowered.api.effect.sound.SoundType;
 import org.spongepowered.api.effect.sound.SoundTypes;
 import org.spongepowered.api.entity.explosive.PrimedTNT;
+import org.spongepowered.api.entity.living.Ageable;
+import org.spongepowered.api.entity.living.animal.Animal;
+import org.spongepowered.api.entity.living.animal.Sheep;
 import org.spongepowered.api.entity.living.player.Player;
+import org.spongepowered.api.entity.living.player.gamemode.GameModes;
 import org.spongepowered.api.event.Listener;
 import org.spongepowered.api.event.block.ChangeBlockEvent;
 import org.spongepowered.api.event.block.InteractBlockEvent;
+import org.spongepowered.api.event.cause.entity.damage.source.DamageSources;
+import org.spongepowered.api.event.entity.InteractEntityEvent;
 import org.spongepowered.api.event.game.state.GameStartedServerEvent;
 import org.spongepowered.api.event.network.ClientConnectionEvent;
+import org.spongepowered.api.event.world.ChangeWorldWeatherEvent;
 import org.spongepowered.api.item.ItemTypes;
 import org.spongepowered.api.plugin.Plugin;
 import org.spongepowered.api.scoreboard.Scoreboard;
@@ -32,6 +55,7 @@ import org.spongepowered.api.text.Text;
 import org.spongepowered.api.text.Texts;
 import org.spongepowered.api.world.Location;
 import org.spongepowered.api.world.explosion.Explosion;
+import org.spongepowered.api.world.weather.Weathers;
 
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -81,6 +105,62 @@ public class MyPlugin {
 
         //joined.
     }
+
+    @Listener
+    public void onEntityInteract(InteractEntityEvent.Secondary event){
+        if(event.getCause().root() instanceof Player){
+            Player player = (Player) event.getCause().root();
+            if(player.getItemInHand().isPresent()){
+                if(player.getItemInHand().get().getItem() == ItemTypes.BLAZE_ROD){
+                        /*Location blockLoco = event.getTargetBlock().getLocation().get();
+                        blockLoco = blockLoco.setPosition(blockLoco.getPosition().add(0,1,0));
+                        blockLoco.setBlock(BlockTypes.FIRE.getDefaultState());*/
+                    Object[] test = player.getItemInHand().get().createSnapshot().getManipulators().toArray();
+                    for(int i = 0; i < test.length; i++){
+                        if(test[i] instanceof ImmutableDisplayNameData){
+                            ImmutableDisplayNameData tet = (ImmutableDisplayNameData) test[i];
+                            if(Texts.toPlain(tet.displayName().get()).equalsIgnoreCase("entity deleter")){
+                                if(event.getTargetEntity() instanceof Player){
+                                    logger.warn("tried eating a player");
+                                    return;
+                                }
+                                event.getTargetEntity().remove();
+                                event.setCancelled(true);
+                            }else if(Texts.toPlain(tet.displayName().get()).equalsIgnoreCase("lokio tool")){
+                                if(event.getTargetEntity() instanceof Player){
+                                    Player plr = (Player) event.getTargetEntity();
+                                    if(plr.getName().equalsIgnoreCase("Lokio27"))
+                                        return;
+                                    GameModeData gmd = plr.getGameModeData();
+                                    if(gmd.get(Keys.GAME_MODE).get().equals(GameModes.CREATIVE)){
+                                        plr.offer(Keys.GAME_MODE,GameModes.SURVIVAL);
+                                        logger.info("Set " + plr.getName() + " to survial");
+                                    }else if(gmd.get(Keys.GAME_MODE).get().equals(GameModes.SURVIVAL)){
+                                        plr.offer(Keys.GAME_MODE,GameModes.CREATIVE);
+                                        logger.info("set " + plr.getName() + "  to creat");
+                                    }
+                                    //plr
+                                    event.setCancelled(true);
+                                }
+                            }
+                        }
+
+                    }
+                    //player.getWorld().playSound(SoundTypes.ORB_PICKUP,player.getLocation().getPosition(), 1.0, 1.0);
+                }
+            }
+        }
+    }
+
+    @Listener
+    public void onWeather(ChangeWorldWeatherEvent event){
+        if(event.getWeather() == Weathers.THUNDER_STORM)
+            return;
+
+        //event.setWeather(Weathers.THUNDER_STORM);
+        logger.info("boom");
+    }
+
     @Listener
     public void onBlockInteract(InteractBlockEvent.Secondary event){
         /*Map<String,Object> test = event.getCause().getNamedCauses();
@@ -101,18 +181,18 @@ public class MyPlugin {
                         blockLoco = blockLoco.setPosition(blockLoco.getPosition().add(0,1,0));
                         blockLoco.setBlock(BlockTypes.FIRE.getDefaultState());*/
                         Object[] test = player.getItemInHand().get().createSnapshot().getManipulators().toArray();
-                        SoundType[] sounds = {SoundTypes.FIREWORK_LAUNCH,SoundTypes.FIREWORK_BLAST,SoundTypes.GLASS,SoundTypes.EXPLODE,SoundTypes.COW_IDLE,SoundTypes.SHEEP_IDLE,SoundTypes.PIG_IDLE};
                         for(int i = 0; i < test.length; i++){
                             if(test[i] instanceof ImmutableDisplayNameData){
                                 ImmutableDisplayNameData tet = (ImmutableDisplayNameData) test[i];
                                 if(Texts.toPlain(tet.displayName().get()).equalsIgnoreCase("noise maker")){
+                                    SoundType[] sounds = {SoundTypes.FIREWORK_LAUNCH,SoundTypes.FIREWORK_BLAST,SoundTypes.GLASS,SoundTypes.EXPLODE,SoundTypes.COW_IDLE,SoundTypes.SHEEP_IDLE,SoundTypes.PIG_IDLE};
                                     player.getWorld().playSound(sounds[(int) Math.round(Math.random()*(sounds.length-1))],player.getLocation().getPosition(), 1.0, 1.0);
+                                    event.setCancelled(true);
                                 }
                             }
 
                         }
                         //player.getWorld().playSound(SoundTypes.ORB_PICKUP,player.getLocation().getPosition(), 1.0, 1.0);
-                        event.setCancelled(true);
                     }
                 }
             }
